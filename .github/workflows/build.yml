@@ -2,6 +2,11 @@ name: Build
 
 on:
   push:
+    branches:
+      - "**"
+    tags:
+      - "v*"
+      - "V*"
     paths:
       - "src/**"
       - Cargo.toml
@@ -62,3 +67,35 @@ jobs:
           name: ${{ matrix.artifact }}
           path: release-package/
           if-no-files-found: error
+
+  release:
+    name: Publish release
+    needs: build
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download release packages
+        uses: actions/download-artifact@v4
+        with:
+          pattern: aoe4-replay-launcher-*
+          path: artifacts
+
+      - name: Create release ZIPs
+        run: |
+          chmod +x artifacts/aoe4-replay-launcher-linux-x86_64/aoe4_replay_launcher
+          zip -j aoe4-replay-launcher-linux-x86_64.zip artifacts/aoe4-replay-launcher-linux-x86_64/*
+          zip -j aoe4-replay-launcher-windows-x86_64.zip artifacts/aoe4-replay-launcher-windows-x86_64/*
+
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          gh release create "$RELEASE_TAG" \
+            aoe4-replay-launcher-linux-x86_64.zip \
+            aoe4-replay-launcher-windows-x86_64.zip \
+            --verify-tag --title "$RELEASE_TAG" --generate-notes

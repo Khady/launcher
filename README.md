@@ -25,3 +25,16 @@ Then when the user clicks a replay URL on aoe4replays.gg, the launcher :
 - run `cargo build --release` at the root folder of the repository,
 - the executable gets generated in `target/release/aoe4_replay_launcher.exe`
 
+## Publishing a release
+
+Commit the changes you want to release, including the build workflow, then create and push a new version tag:
+
+```sh
+git tag v1.2
+git push origin v1.2
+```
+
+Use a new version number for each release. Tags starting with `v` or `V` trigger Windows and Linux builds. Once both succeed, GitHub Actions publishes a release with generated release notes and both ZIPs, each containing the executable and `MANUAL.txt`. Follow progress in the repository's Actions tab; downloads appear under Releases.
+
+Ordinary branch pushes and pull requests only upload build artifacts.
+
