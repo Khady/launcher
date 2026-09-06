@@ -1,5 +1,5 @@
 use std::env;
-use std::fs::{self, File};
+use std::fs::File;
 use std::io::{self, copy, Cursor};
 use std::path::PathBuf;
 use std::process::Command;
@@ -22,7 +22,14 @@ fn main() {
         println!("URL = {url}");
         let match_id = parse_aoe4rep_url(url).expect("Failed to parse URL");
         println!("Match ID = {match_id}");
-        let replay_name = download_replay(match_id).expect("Failed to get replay");
+        let replay_name = match download_replay(match_id) {
+            Ok(replay_name) => replay_name,
+            Err(error) => {
+                eprintln!("Failed to download replay {match_id}: {error}");
+                wait_for_key();
+                std::process::exit(1);
+            }
+        };
         run_replay(replay_name);
     } else {
         println!("Configuring...");
@@ -48,7 +55,11 @@ fn download_replay(match_id: u64) -> Result<String, Box<dyn std::error::Error>> 
     let mut file_path = folder.clone();
     file_path.push(&filename);
     let url = format!("{}/api/replays/{}", HOME_URL, match_id);
-    let bytes = get(url)?.bytes()?;
+    let response = get(url)?;
+    if response.status() == reqwest::StatusCode::FORBIDDEN {
+        return Err("Replays must be started from aoe4replays.gg.".into());
+    }
+    let bytes = response.error_for_status()?.bytes()?;
     let cursor = Cursor::new(bytes);
     let mut decoder = GzDecoder::new(cursor);
     let mut output = File::create(file_path)?;
@@ -231,7 +242,7 @@ fn register_url_protocol() -> std::io::Result<()> {
         .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "Non-UTF8 exe path"))?;
 
     let desktop_content = format!(
-        "[Desktop Entry]\nName=AOE4 Replay Launcher\nExec=\"{exe_str}\" %u\nType=Application\nNoDisplay=true\nMimeType=x-scheme-handler/aoe4rep;\n"
+        "[Desktop Entry]\nName=AOE4 Replay Launcher\nExec=\"{exe_str}\" %u\nType=Application\nTerminal=true\nNoDisplay=true\nMimeType=x-scheme-handler/aoe4rep;\n"
     );
 
     let home = dirs::home_dir()
