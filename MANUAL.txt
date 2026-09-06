@@ -1,22 +1,19 @@
+IMPORTANT NOTE
+
+The launcher only works for Steam users (no Game Pass support)
+
 HOW TO USE
 
-1. place aoe4_replay_launcher.exe in a folder of your choice, and run it once.
-   -> if you move it somewhere else afterward, you'll have to run it again, so that its new path gets updated.
+1. place the launcher executable file in a folder of your choice, and run it once.
+   -> if you move it somewhere else afterward, you'll have to run it again, so that its new path gets updated in the OS.
    -> configuration is fully automated, press Enter to exit the installation window.
 
-2. go to https://aoe4replays.gg and click on the run button of a replay of your choice.
+2. go to https://aoe4replays.gg and click on the run button from a replay of your choice.
    -> your browser will ask permission for running the launcher.
-   -> once you validate, the launcher will automatically download the replay file and start AOE4 in replay mode on that replay.
+   -> once you give permission, the launcher will automatically download the replay file and start AOE4 in replay mode on that replay.
 
-note 1 : make sure AOE4 is not already running beforehand.
-note 2 : you should get an authentication error message in AOE4 at the start, this is normal in replay mode, just click OK and the repay will start.
-
-
-LIMITATIONS
-
-- only works for Steam users (no Game Pass support).
-- only available on Windows.
-
+note 1 : exit AOE4 if it is already open before running a replay.
+note 2 : if AOE4 stays tuck on blackscreen it's probably that the replay is from an older patch and incompatible with current game version.
 
 HOW TO UNINSTALL
 

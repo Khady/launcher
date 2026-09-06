@@ -4,10 +4,7 @@ A launcher that allows replays from https://aoe4replays.gg to be run automatical
 
 Currently only works on Windows and if AOE4 is installed through Steam.
 
-Download links (with instructions) :
-- [Windows launcher v1.1](https://github.com/aoe4replays-gg/launcher/releases/download/V1.1/aoe4-replay-launcher-windows-x86_64.zip)
-- [Linux launcher v1.1](https://github.com/aoe4replays-gg/launcher/releases/download/V1.1/aoe4-replay-launcher-linux-x86_64.zip)
-
+Download links (with instructions) in https://github.com/aoe4replays-gg/launcher/releases
 
 ## How it works
 When manually run, the launcher binds itself as handler of the `aoe4rep://` URL protocol in Windows (a custom URL format we defined for this use-case).
@@ -24,17 +21,3 @@ Then when the user clicks a replay URL on aoe4replays.gg, the launcher :
 - clone this github repository,
 - run `cargo build --release` at the root folder of the repository,
 - the executable gets generated in `target/release/aoe4_replay_launcher.exe`
-
-## Publishing a release
-
-Commit the changes you want to release, including the build workflow, then create and push a new version tag:
-
-```sh
-git tag v1.2
-git push origin v1.2
-```
-
-Use a new version number for each release. Tags starting with `v` or `V` trigger Windows and Linux builds. Once both succeed, GitHub Actions publishes a release with generated release notes and both ZIPs, each containing the executable and `MANUAL.txt`. Follow progress in the repository's Actions tab; downloads appear under Releases.
-
-Ordinary branch pushes and pull requests only upload build artifacts.
-
