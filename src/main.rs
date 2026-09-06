@@ -1,8 +1,11 @@
 use std::env;
+#[cfg(target_os = "linux")]
+use std::fs;
 use std::fs::File;
 use std::io::{self, copy, Cursor};
 use std::path::PathBuf;
 use std::process::Command;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use flate2::read::GzDecoder;
 use reqwest::blocking::get;
@@ -20,12 +23,10 @@ fn main() {
     if args.len() > 1 {
         let url = args[1].to_string();
         println!("URL = {url}");
-        let match_id = parse_aoe4rep_url(url).expect("Failed to parse URL");
-        println!("Match ID = {match_id}");
-        let replay_name = match download_replay(match_id) {
+        let replay_name = match download_replay(&url) {
             Ok(replay_name) => replay_name,
             Err(error) => {
-                eprintln!("Failed to download replay {match_id}: {error}");
+                eprintln!("Failed to download replay: {error}");
                 wait_for_key();
                 std::process::exit(1);
             }
@@ -48,14 +49,14 @@ fn wait_for_key() {
     io::stdin().read_line(&mut dummy).expect("");
 }
 
-fn download_replay(match_id: u64) -> Result<String, Box<dyn std::error::Error>> {
-    let filename = format!("AgeIV_Replay_{}", match_id);
+fn download_replay(url: &str) -> Result<String, Box<dyn std::error::Error>> {
+    let timestamp = SystemTime::now().duration_since(UNIX_EPOCH)?.as_nanos();
+    let filename = format!("AgeIV_Replay_{}", timestamp);
     let folder = playback_dir()?;
     println!("Replay playback folder detected in : {}", folder.display());
     let mut file_path = folder.clone();
     file_path.push(&filename);
-    let url = format!("{}/api/replays/{}", HOME_URL, match_id);
-    let response = get(url)?;
+    let response = get(replay_download_url(url)?)?;
     if response.status() == reqwest::StatusCode::FORBIDDEN {
         return Err("Replays must be started from aoe4replays.gg.".into());
     }
@@ -68,15 +69,11 @@ fn download_replay(match_id: u64) -> Result<String, Box<dyn std::error::Error>> 
     Ok(filename)
 }
 
-fn parse_aoe4rep_url(url: String) -> Result<u64, String> {
-    let prefix = "aoe4rep://m/";
-    if !url.starts_with(prefix) {
-        return Err(format!("URL does not start with '{}'", prefix));
-    }
-    let match_id = url.strip_prefix(prefix).unwrap();
-    match_id
-        .parse::<u64>()
-        .map_err(|_| format!("Failed to parse matchId '{}' as a number", match_id))
+fn replay_download_url(url: &str) -> Result<reqwest::Url, Box<dyn std::error::Error>> {
+    Ok(reqwest::Url::parse_with_params(
+        &format!("{HOME_URL}/api/replays"),
+        &[("url", url)],
+    )?)
 }
 
 // ── Windows ──────────────────────────────────────────────────────────────────
@@ -271,26 +268,20 @@ mod tests {
     use super::*;
 
     #[test]
-    fn parse_valid_url() {
-        assert_eq!(parse_aoe4rep_url("aoe4rep://m/123456".to_string()), Ok(123456));
-    }
-
-    #[test]
-    fn parse_url_wrong_prefix() {
-        assert!(parse_aoe4rep_url("https://aoe4replays.gg/m/123".to_string()).is_err());
-    }
-
-    #[test]
-    fn parse_url_non_numeric_id() {
-        assert!(parse_aoe4rep_url("aoe4rep://m/abc".to_string()).is_err());
-    }
-
-    #[test]
-    fn parse_url_large_id() {
-        assert_eq!(
-            parse_aoe4rep_url("aoe4rep://m/18446744073709551615".to_string()),
-            Ok(u64::MAX)
-        );
+    fn download_url_preserves_original_url_as_one_query_parameter() {
+        for original in [
+            "aoe4rep://m/123456",
+            "aoe4rep://replay/opaque-id?token=a+b%2Fc==&expires=123#fragment",
+        ] {
+            let url = replay_download_url(original).unwrap();
+            assert_eq!(url.origin().ascii_serialization(), HOME_URL);
+            assert_eq!(url.path(), "/api/replays");
+            assert_eq!(url.fragment(), None);
+            assert_eq!(
+                url.query_pairs().into_owned().collect::<Vec<_>>(),
+                vec![("url".to_string(), original.to_string())]
+            );
+        }
     }
 
     #[test]
