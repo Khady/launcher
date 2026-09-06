@@ -6,11 +6,15 @@ on:
       - "src/**"
       - Cargo.toml
       - Cargo.lock
+      - MANUAL.txt
+      - .github/workflows/build.yml
   pull_request:
     paths:
       - "src/**"
       - Cargo.toml
       - Cargo.lock
+      - MANUAL.txt
+      - .github/workflows/build.yml
   workflow_dispatch:
 
 permissions:
@@ -46,9 +50,15 @@ jobs:
       - name: Build release executable
         run: cargo build --release --locked
 
-      - name: Upload executable
+      - name: Prepare release package
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path release-package -Force | Out-Null
+          Copy-Item -LiteralPath '${{ matrix.executable }}', 'MANUAL.txt' -Destination release-package -ErrorAction Stop
+
+      - name: Upload release package
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact }}
-          path: ${{ matrix.executable }}
+          path: release-package/
           if-no-files-found: error
